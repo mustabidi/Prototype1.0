@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cached_network_image/cached_network_image.dart';
-import '../../models/post_model.dart';
-import '../../services/firestore_service.dart';
+import '../../../models/post_model.dart';
+import '../../../services/firestore_service.dart';
 
 class PostCard extends StatelessWidget {
   final PostModel post;
@@ -293,6 +293,7 @@ class PostCard extends StatelessWidget {
               ],
             ),
           ],
+        ),
         ),
       ),
     );
