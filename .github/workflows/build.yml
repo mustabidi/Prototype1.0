@@ -29,12 +29,13 @@ jobs:
           sed -i 's/minSdkVersion [0-9]\+/minSdkVersion 21/g' android/app/build.gradle
           sed -i 's/minSdkVersion flutter.minSdkVersion/minSdkVersion 21/g' android/app/build.gradle
           
-          # Patch Kotlin version in root build.gradle
-          sed -i "s/ext.kotlin_version = '[0-9.]*'/ext.kotlin_version = '1.9.0'/g" android/build.gradle
+          # Patch Kotlin version in root build.gradle - handle both single and double quotes
+          sed -i "s/ext.kotlin_version = [\"'][0-9.]*[\"']/ext.kotlin_version = '1.9.0'/g" android/build.gradle
           
-          # Debug: show the modified lines
-          grep "minSdkVersion" android/app/build.gradle
-          grep "kotlin_version" android/build.gradle
+          # Debug: show the modified lines (don't fail if not found)
+          grep "minSdkVersion" android/app/build.gradle || true
+          grep "kotlin_version" android/build.gradle || true
+          grep "id \"org.jetbrains.kotlin.android\" version" android/build.gradle || true
           
       - run: flutter pub get
       
