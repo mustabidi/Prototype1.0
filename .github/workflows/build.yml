@@ -23,6 +23,11 @@ jobs:
           
       - run: flutter create --platforms android --project-name prototype .
           
+      - name: Patch minSdkVersion
+        run: |
+          sed -i 's/minSdkVersion [0-9]*/minSdkVersion 21/g' android/app/build.gradle
+          sed -i 's/minSdkVersion flutter.minSdkVersion/minSdkVersion 21/g' android/app/build.gradle
+          
       - run: flutter pub get
       
       - run: flutter build apk --release
