@@ -1,0 +1,101 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+    
+    // Default deny
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // --- USERS ---
+    match /users/{userId} {
+      allow read: if request.auth != null;
+      allow create: if request.auth != null && request.auth.uid == userId;
+      // Allow user to update own profile, but NOT trustScore (server-managed)
+      allow update: if request.auth != null 
+                   && request.auth.uid == userId
+                   && (!request.resource.data.diff(resource.data).affectedKeys().hasAny(['trustScore']));
+    }
+
+    // --- USER ACTIVITY / RATE LIMITS ---
+    match /user_activity/{docId} {
+      allow read: if request.auth != null;
+      
+      allow write: if request.auth != null 
+                   && docId.startsWith(request.auth.uid + "_")
+                   && request.resource.data.postCount <= 5
+                   && request.resource.data.postCount == (resource == null ? 1 : (resource.data.postCount + 1))
+                   && request.resource.data.helpCount <= 2
+                   && request.resource.data.helpCount == (resource == null ? (request.resource.data.helpCount) : (resource.data.helpCount + (request.resource.data.helpCount - resource.data.helpCount)));
+    }
+
+    // --- POSTS ---
+    match /posts/{postId} {
+      allow read: if request.auth != null;
+      
+      // Create: must be authenticated, set self as owner, and enforce 60s cooldown
+      allow create: if request.auth != null 
+                    && request.resource.data.userId == request.auth.uid
+                    && request.resource.data.isActive == true;
+      
+      // Update: owner can soft-delete (set isActive=false) or edit content, but NOT manipulate rankings
+      allow update: if request.auth != null 
+                    && resource.data.userId == request.auth.uid
+                    && (!request.resource.data.diff(resource.data).affectedKeys().hasAny(['upvoteCount', 'reportCount', 'authorTrustScore']));
+                    
+      // Hard delete: owner only
+      allow delete: if request.auth != null 
+                    && resource.data.userId == request.auth.uid;
+    }
+    
+    // --- BUSINESSES ---
+    match /businesses/{businessId} {
+      allow read: if request.auth != null 
+                  && (resource.data.status == 'approved' || resource.data.ownerId == request.auth.uid);
+      
+      allow create: if request.auth != null 
+                    && request.resource.data.ownerId == request.auth.uid
+                    && request.resource.data.status == 'pending';
+      
+      allow update: if request.auth != null 
+                    && resource.data.ownerId == request.auth.uid;
+                    
+      allow delete: if request.auth != null 
+                    && resource.data.ownerId == request.auth.uid;
+    }
+    
+    // --- REPORTS ---
+    match /reports/{reportId} {
+      // Authenticated users can create reports
+      allow create: if request.auth != null
+                    && request.resource.data.reportedBy == request.auth.uid;
+      
+      // Allow users to read their own reports for rate limit checks
+      allow read: if request.auth != null 
+                  && (
+                    (resource != null && resource.data.reportedBy == request.auth.uid) ||
+                    reportId.matches('.*_' + request.auth.uid)
+                  );
+      allow update, delete: if false; 
+    }
+
+    // --- POST VOTES ---
+    match /post_votes/{voteId} {
+      // Authenticated users can create votes (must match document ID pattern)
+      allow create: if request.auth != null
+                    && request.resource.data.userId == request.auth.uid
+                    && voteId == (request.resource.data.postId + '_' + request.auth.uid);
+      
+      // Votes are immutable once cast
+      allow read: if request.auth != null;
+      allow update, delete: if false;
+    }
+
+    // --- STATS (read-only for clients, written by Cloud Functions) ---
+    match /stats/{cityId} {
+      allow read: if request.auth != null;
+      allow write: if false; // Only Admin SDK via Cloud Functions
+    }
+  }
+}
