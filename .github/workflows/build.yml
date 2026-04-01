@@ -25,8 +25,11 @@ jobs:
           
       - name: Patch minSdkVersion
         run: |
-          sed -i 's/minSdkVersion [0-9]*/minSdkVersion 21/g' android/app/build.gradle
+          # Use a more precise regex to avoid mangling the line
+          sed -i 's/minSdkVersion [0-9]\+/minSdkVersion 21/g' android/app/build.gradle
           sed -i 's/minSdkVersion flutter.minSdkVersion/minSdkVersion 21/g' android/app/build.gradle
+          # Debug: show the modified line to verify
+          grep "minSdkVersion" android/app/build.gradle
           
       - run: flutter pub get
       
