@@ -40,8 +40,11 @@ jobs:
       
       - name: Print Auto-Generated Keystore SHA-1
         run: |
-          cd android
-          ./gradlew signingReport | grep "SHA1:" | head -n 1
+          echo "Checking Gradlew Signing Report..."
+          cd android && ./gradlew signingReport | grep "SHA1" || true
+          
+          echo "Checking Keytool Fallback..."
+          keytool -list -v -keystore ~/.android/debug.keystore -alias androiddebugkey -storepass android -keypass android | grep "SHA1" || true
       
       - run: flutter build apk --release
       
