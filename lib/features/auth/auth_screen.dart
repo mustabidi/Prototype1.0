@@ -9,138 +9,99 @@ class AuthScreen extends StatefulWidget {
 }
 
 class _AuthScreenState extends State<AuthScreen> {
-  final _phoneController = TextEditingController();
-  final _otpController = TextEditingController();
+  final _emailController = TextEditingController();
+  final _passwordController = TextEditingController();
   final AuthService _authService = AuthService();
 
-  bool _codeSent = false;
+  bool _isLogin = true;
   bool _isLoading = false;
-  bool _canResend = false;
-  int _resendCountdown = 60;
-  Timer? _resendTimer;
 
   @override
   void dispose() {
-    _resendTimer?.cancel();
-    _phoneController.dispose();
-    _otpController.dispose();
+    _emailController.dispose();
+    _passwordController.dispose();
     super.dispose();
   }
 
-  void _startResendTimer() {
-    _canResend = false;
-    _resendCountdown = 60;
-    _resendTimer?.cancel();
-    _resendTimer = Timer.periodic(Duration(seconds: 1), (timer) {
-      setState(() {
-        _resendCountdown--;
-        if (_resendCountdown <= 0) {
-          _canResend = true;
-          timer.cancel();
-        }
-      });
-    });
-  }
-
-  void _sendOtp() async {
-    final phone = _phoneController.text.trim();
-    if (phone.isEmpty) {
-      _showError('Enter a phone number');
+  void _submit() async {
+    final email = _emailController.text.trim();
+    final password = _passwordController.text.trim();
+    
+    if (email.isEmpty || password.length < 6) {
+      _showError('Enter a valid email and password (6+ chars)');
       return;
     }
+    
     setState(() => _isLoading = true);
-    await _authService.sendOtp(
-      phone,
-      (verId) {
-        setState(() {
-          _codeSent = true;
-          _isLoading = false;
-        });
-        _startResendTimer();
-      },
-      onError: (msg) {
-        setState(() => _isLoading = false);
-        _showError(msg);
-      },
-    );
-  }
-
-  void _verifyOtp() async {
-    final otp = _otpController.text.trim();
-    if (otp.isEmpty || otp.length < 6) {
-      _showError('Enter a valid 6-digit OTP');
-      return;
-    }
-    setState(() => _isLoading = true);
+    
     try {
-      final userCred = await _authService.verifyOtp(otp);
-      if (userCred != null && userCred.user != null) {
-        bool exists = await _authService.userExists(userCred.user!.uid);
+      UserCredential? userCred;
+      if (_isLogin) {
+        userCred = await _authService.signInWithEmail(email, password);
+      } else {
+        userCred = await _authService.signUpWithEmail(email, password);
+      }
+      
+      if (userCred?.user != null) {
+        bool exists = await _authService.userExists(userCred!.user!.uid);
         if (exists) {
-          context.go('/');
+          if (context.mounted) context.go('/');
         } else {
-          context.go('/onboarding');
+          if (context.mounted) context.go('/onboarding');
         }
       } else {
         setState(() => _isLoading = false);
-        _showError('Verification failed. Try again.');
+        _showError('Authentication failed.');
       }
     } catch (e) {
       setState(() => _isLoading = false);
-      _showError('Invalid OTP. Please check and retry.');
+      _showError(_isLogin ? 'Login failed. Invalid credentials?' : 'Registration failed. Email in use?');
     }
   }
 
   void _showError(String msg) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text(msg)),
-    );
+    if (context.mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(msg)));
+    }
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: Text('Login')),
+      appBar: AppBar(title: Text(_isLogin ? 'Login' : 'Create Account')),
       body: Padding(
         padding: const EdgeInsets.all(24.0),
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            if (!_codeSent) ...[
-              TextField(
-                controller: _phoneController,
-                decoration: InputDecoration(labelText: 'Phone Number (+91...)'),
-                keyboardType: TextInputType.phone,
+            TextField(
+              controller: _emailController,
+              decoration: InputDecoration(labelText: 'Email Address'),
+              keyboardType: TextInputType.emailAddress,
+            ),
+            SizedBox(height: 16),
+            TextField(
+              controller: _passwordController,
+              decoration: InputDecoration(labelText: 'Password'),
+              obscureText: true,
+            ),
+            SizedBox(height: 32),
+            ElevatedButton(
+              onPressed: _isLoading ? null : _submit,
+              style: ElevatedButton.styleFrom(
+                minimumSize: Size(double.infinity, 50),
               ),
-              SizedBox(height: 20),
-              ElevatedButton(
-                onPressed: _isLoading ? null : _sendOtp,
-                child: _isLoading
-                    ? SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2))
-                    : Text('Send OTP'),
+              child: _isLoading
+                  ? SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2))
+                  : Text(_isLogin ? 'Login Securely' : 'Sign Up Securely'),
+            ),
+            SizedBox(height: 16),
+            TextButton(
+              onPressed: () => setState(() => _isLogin = !_isLogin),
+              child: Text(
+                _isLogin ? "Don't have an account? Sign Up" : "Already have an account? Login",
               ),
-            ] else ...[
-              TextField(
-                controller: _otpController,
-                decoration: InputDecoration(labelText: 'Enter 6-digit OTP'),
-                keyboardType: TextInputType.number,
-                maxLength: 6,
-              ),
-              SizedBox(height: 20),
-              ElevatedButton(
-                onPressed: _isLoading ? null : _verifyOtp,
-                child: _isLoading
-                    ? SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2))
-                    : Text('Verify OTP'),
-              ),
-              SizedBox(height: 16),
-              TextButton(
-                onPressed: _canResend ? _sendOtp : null,
-                child: Text(
-                  _canResend ? 'Resend OTP' : 'Resend in ${_resendCountdown}s',
-                ),
-              ),
-            ],
+            ),
           ],
         ),
       ),

@@ -45,6 +45,14 @@ class AuthService {
     return await _auth.signInWithCredential(credential);
   }
 
+  Future<UserCredential?> signUpWithEmail(String email, String password) async {
+    return await _auth.createUserWithEmailAndPassword(email: email, password: password);
+  }
+
+  Future<UserCredential?> signInWithEmail(String email, String password) async {
+    return await _auth.signInWithEmailAndPassword(email: email, password: password);
+  }
+
   // Check if User data exists in Firestore
   Future<bool> userExists(String uid) async {
     DocumentSnapshot doc = await _firestore.collection('users').doc(uid).get();
