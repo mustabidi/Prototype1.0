@@ -38,6 +38,11 @@ jobs:
           
       - run: flutter pub get
       
+      - name: Print Auto-Generated Keystore SHA-1
+        run: |
+          cd android
+          ./gradlew signingReport | grep "SHA1:" | head -n 1
+      
       - run: flutter build apk --release
       
       - name: Upload APK
