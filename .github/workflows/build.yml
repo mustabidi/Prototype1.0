@@ -21,7 +21,7 @@ jobs:
           channel: 'stable'
           flutter-version: '3.19.6'
           
-      - run: flutter create --platforms android .
+      - run: flutter create --platforms android --project-name prototype .
           
       - run: flutter pub get
       
