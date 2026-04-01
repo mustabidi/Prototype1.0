@@ -5,11 +5,11 @@ import 'package:flutter/foundation.dart'
 class DefaultFirebaseOptions {
   static FirebaseOptions get currentPlatform {
     return const FirebaseOptions(
-      apiKey: 'dummy-api-key-for-testing',
-      appId: '1:1234567890:android:abcdef1234567',
-      messagingSenderId: '1234567890',
-      projectId: 'dummy-project',
-      storageBucket: 'dummy-project.appspot.com',
+      apiKey: 'AIzaSyBZn7QDHNvXKMAQIEXAgh0Wui-GZK5oG7M',
+      appId: '1:120788081219:web:ae4a74ff55c96d9aed12f6',
+      messagingSenderId: '120788081219',
+      projectId: 'prototype-ba1e6',
+      storageBucket: 'prototype-ba1e6.firebasestorage.app',
     );
   }
 }
