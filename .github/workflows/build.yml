@@ -36,7 +36,7 @@ jobs:
           grep "minSdkVersion" android/app/build.gradle || true
           grep "org.jetbrains.kotlin.android" android/settings.gradle || true
           
-      - run: flutter pub get
+      - run: flutter build apk --release
       
       - name: Print Auto-Generated Keystore SHA-1
         run: |
@@ -45,8 +45,6 @@ jobs:
           
           echo "Checking Keytool Fallback..."
           keytool -list -v -keystore ~/.android/debug.keystore -alias androiddebugkey -storepass android -keypass android | grep "SHA1" || true
-      
-      - run: flutter build apk --release
       
       - name: Upload APK
         uses: actions/upload-artifact@v4
