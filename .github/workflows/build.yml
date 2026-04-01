@@ -21,6 +21,8 @@ jobs:
           channel: 'stable'
           flutter-version: '3.19.6'
           
+      - run: flutter create --platforms android .
+          
       - run: flutter pub get
       
       - run: flutter build apk --release

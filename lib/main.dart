@@ -5,6 +5,7 @@ import 'package:go_router/go_router.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_crashlytics/firebase_crashlytics.dart';
 import 'package:flutter/foundation.dart';
+import 'firebase_options.dart';
 
 import 'features/auth/auth_screen.dart';
 import 'features/onboarding/onboarding_screen.dart';
@@ -13,8 +14,9 @@ import 'features/home/post_detail_screen.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  // STEP REQUIRED: Run `flutterfire configure` to generate firebase_options.dart
-  // await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
+  
+  // Connect to the generic dummy Firebase config so the APK boots without crashing
+  await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
   
   // Phase 6: Automatic Crash Reporting (guarded against pre-init)
   FlutterError.onError = (errorDetails) {
