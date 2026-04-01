@@ -42,21 +42,35 @@ class _AuthScreenState extends State<AuthScreen> {
       } else {
         userCred = await _authService.signUpWithEmail(email, password);
       }
-      
-      if (userCred?.user != null) {
-        bool exists = await _authService.userExists(userCred!.user!.uid);
-        if (exists) {
-          if (context.mounted) context.go('/');
-        } else {
-          if (context.mounted) context.go('/onboarding');
-        }
-      } else {
-        setState(() => _isLoading = false);
-        _showError('Authentication failed.');
-      }
+      _handleAuthResult(userCred);
     } catch (e) {
       setState(() => _isLoading = false);
       _showError(_isLogin ? 'Login failed. Invalid credentials?' : 'Registration failed. Email in use?');
+    }
+  }
+
+  void _signInWithGoogle() async {
+    setState(() => _isLoading = true);
+    try {
+      final userCred = await _authService.signInWithGoogle();
+      _handleAuthResult(userCred);
+    } catch (e) {
+      setState(() => _isLoading = false);
+      _showError('Google Sign-In failed or was cancelled.');
+    }
+  }
+
+  void _handleAuthResult(UserCredential? userCred) async {
+    if (userCred?.user != null) {
+      bool exists = await _authService.userExists(userCred!.user!.uid);
+      if (exists) {
+        if (context.mounted) context.go('/');
+      } else {
+        if (context.mounted) context.go('/onboarding');
+      }
+    } else {
+      setState(() => _isLoading = false);
+      _showError('Authentication failed.');
     }
   }
 
@@ -95,6 +109,18 @@ class _AuthScreenState extends State<AuthScreen> {
               child: _isLoading
                   ? SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2))
                   : Text(_isLogin ? 'Login Securely' : 'Sign Up Securely'),
+            ),
+            SizedBox(height: 16),
+            ElevatedButton.icon(
+              onPressed: _isLoading ? null : _signInWithGoogle,
+              style: ElevatedButton.styleFrom(
+                minimumSize: Size(double.infinity, 50),
+                backgroundColor: Colors.white,
+                foregroundColor: Colors.black87,
+                side: BorderSide(color: Colors.grey.shade300),
+              ),
+              icon: Icon(Icons.g_mobiledata, size: 32, color: Colors.blue),
+              label: Text('Continue with Google'),
             ),
             SizedBox(height: 16),
             TextButton(
